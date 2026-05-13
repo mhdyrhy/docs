@@ -3,6 +3,11 @@ title: Going to production
 description: Take your deep agent to production with persistent memory, sandboxes, resilience middleware, and deployment options
 ---
 
+import SandboxLifecycleFactoryAssistantPy from '/snippets/deepagents-sandbox-lifecycle-factory-assistant-py.mdx';
+import SandboxLifecycleFactoryAssistantTs from '/snippets/deepagents-sandbox-lifecycle-factory-assistant-ts.mdx';
+import SandboxLifecycleFactoryThreadPy from '/snippets/deepagents-sandbox-lifecycle-factory-thread-py.mdx';
+import SandboxLifecycleFactoryThreadTs from '/snippets/deepagents-sandbox-lifecycle-factory-thread-ts.mdx';
+
 This guide covers considerations for taking a deep agent from a local prototype to a production deployment. It walks through scoping memory, configuring execution environments, adding guardrails, and connecting a frontend.
 
 
@@ -295,6 +300,8 @@ Choose a backend based on what needs to persist:
 - [StoreBackend](https://reference.langchain.com/javascript/deepagents/backends/StoreBackend): cross-thread storage that survives across conversations. Scope with a [namespace factory](/oss/javascript/deepagents/backends#namespace-factories).
 - [CompositeBackend](https://reference.langchain.com/javascript/deepagents/backends/CompositeBackend): mix both. Thread-scoped scratch space by default with cross-thread routes for specific paths like `/memories/`.
 
+
+
 For the full list of backends and how to build custom ones, see [backends](/oss/javascript/deepagents/backends).
 
 <Warning>
@@ -324,28 +331,7 @@ The examples below use an async [graph factory](/langsmith/graph-rebuild) instea
 
 
 
-```typescript src/agent.ts
-import { Daytona } from "@daytonaio/sdk";
-import { DaytonaSandbox } from "@langchain/daytona";
-import { createDeepAgent } from "deepagents";
-import type { LangGraphRunnableConfig } from "@langchain/langgraph";
-
-const client = new Daytona();
-
-export async function agent(config: LangGraphRunnableConfig) {
-  const threadId = config.configurable?.thread_id as string;  // [!code highlight]
-  let sandbox;
-  try {
-    sandbox = await client.findOne({ labels: { thread_id: threadId } });
-  } catch {
-    sandbox = await client.create({
-      labels: { thread_id: threadId },
-      autoDeleteInterval: 3600, // TTL: clean up when idle
-    });
-  }
-  return createDeepAgent({ backend: await DaytonaSandbox.fromId(sandbox.id) });
-}
-```
+<SandboxLifecycleFactoryThreadTs />
 
 
   </Tab>
@@ -354,25 +340,7 @@ export async function agent(config: LangGraphRunnableConfig) {
 
 
 
-```typescript src/agent.ts
-import { Daytona } from "@daytonaio/sdk";
-import { DaytonaSandbox } from "@langchain/daytona";
-import { createDeepAgent } from "deepagents";
-import type { LangGraphRunnableConfig } from "@langchain/langgraph";
-
-const client = new Daytona();
-
-export async function agent(config: LangGraphRunnableConfig) {
-  const assistantId = config.configurable?.assistant_id as string;  // [!code highlight]
-  let sandbox;
-  try {
-    sandbox = await client.findOne({ labels: { assistant_id: assistantId } });
-  } catch {
-    sandbox = await client.create({ labels: { assistant_id: assistantId } });
-  }
-  return createDeepAgent({ backend: await DaytonaSandbox.fromId(sandbox.id) });
-}
-```
+<SandboxLifecycleFactoryAssistantTs />
 
 
     <Warning>
